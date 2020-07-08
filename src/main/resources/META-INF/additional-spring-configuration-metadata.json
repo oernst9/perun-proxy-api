@@ -1,0 +1,28 @@
+{
+  "properties": [
+    {
+      "name": "connector.rpc.request.timeout",
+      "type": "java.lang.Integer"
+    },
+    {
+      "name": "connector.rpc.connect.timeout",
+      "type": "java.lang.Integer"
+    },
+    {
+      "name": "connector.rpc.socket.timeout",
+      "type": "java.lang.Integer"
+    },
+    {
+      "name": "connector.rpc.max.connections",
+      "type": "java.lang.Integer"
+    },
+    {
+      "name": "connector.rpc.max.per.route",
+      "type": "java.lang.Integer"
+    },
+    {
+      "name": "connector.ldap.port",
+      "type": "java.lang.Integer"
+    }
+  ]
+}
