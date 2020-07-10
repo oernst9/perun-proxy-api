@@ -4,5 +4,11 @@ public enum Entity {
     USER,
     VO,
     FACILITY,
-    GROUP
+    GROUP,
+    RESOURCE;
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
 }
