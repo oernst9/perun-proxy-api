@@ -12,6 +12,7 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Methods for fetching data.
@@ -97,4 +98,12 @@ public interface DataAdapter {
      * @return List of Facilities.
      */
     List<Facility> searchFacilitiesByAttributeValue(@NonNull PerunAttribute attribute);
+
+    /**
+     * @param entityId int entityId
+     * @param userGroups array of groups where user belongs to
+     * @return array of resource capabilities
+     */
+    Set<String> getResourceCapabilities(@NonNull Long entityId, @NonNull List<Group> userGroups);
+
 }

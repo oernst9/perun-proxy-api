@@ -29,7 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,27 +41,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.ASSIGNED_GROUP_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.CN;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.DESCRIPTION;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.EDU_PERSON_PRINCIPAL_NAMES;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.ENTITY_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.GIVEN_NAME;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.MEMBER_OF;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.O;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.OBJECT_CLASS;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_FACILITY;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_FACILITY_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_GROUP;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_GROUP_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_PARENT_GROUP_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_RESOURCE;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_UNIQUE_GROUP_NAME;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_USER;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_USER_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_VO;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.PERUN_VO_ID;
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.SN;
+import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.*;
 import static org.apache.directory.ldap.client.api.search.FilterBuilder.and;
 import static org.apache.directory.ldap.client.api.search.FilterBuilder.equal;
 import static org.apache.directory.ldap.client.api.search.FilterBuilder.or;
@@ -89,9 +71,9 @@ public class LdapAdapterImpl implements DataAdapter {
         }
 
         FilterBuilder filter = and(equal(OBJECT_CLASS, PERUN_USER), or(filterUids));
-        String[] attributes = new String[] { PERUN_USER_ID, GIVEN_NAME, SN };
+        String[] attributes = new String[]{PERUN_USER_ID, GIVEN_NAME, SN};
         EntryMapper<User> mapper = e -> {
-            if (!checkHasAttributes(e, new String[] { PERUN_USER_ID, SN })) {
+            if (!checkHasAttributes(e, new String[]{PERUN_USER_ID, SN})) {
                 return null;
             }
 
@@ -128,7 +110,7 @@ public class LdapAdapterImpl implements DataAdapter {
 
     @Override
     public Group getGroupByName(@NonNull Long voId, @NonNull String groupName) {
-        String[] attributes = new String[]{ PERUN_GROUP_ID, CN, PERUN_UNIQUE_GROUP_NAME, PERUN_VO_ID, DESCRIPTION };
+        String[] attributes = new String[]{PERUN_GROUP_ID, CN, PERUN_UNIQUE_GROUP_NAME, PERUN_VO_ID, DESCRIPTION};
         FilterBuilder groupFilter = and(
                 equal(OBJECT_CLASS, PERUN_GROUP),
                 equal(PERUN_UNIQUE_GROUP_NAME, groupName)
@@ -140,7 +122,7 @@ public class LdapAdapterImpl implements DataAdapter {
 
     @Override
     public Vo getVoByShortName(@NonNull String shortName) {
-        String[] attributes = new String[] { PERUN_VO_ID, O, DESCRIPTION };
+        String[] attributes = new String[]{PERUN_VO_ID, O, DESCRIPTION};
         FilterBuilder filter = and(equal(OBJECT_CLASS, PERUN_VO), equal(O, shortName));
         EntryMapper<Vo> mapper = this.voMapper(attributes);
 
@@ -149,7 +131,7 @@ public class LdapAdapterImpl implements DataAdapter {
 
     @Override
     public Vo getVoById(@NonNull Long id) {
-        String[] attributes = new String[] { PERUN_VO_ID, O, DESCRIPTION };
+        String[] attributes = new String[]{PERUN_VO_ID, O, DESCRIPTION};
         FilterBuilder filter = and(
                 equal(OBJECT_CLASS, PERUN_VO),
                 equal(PERUN_VO_ID, String.valueOf(id))
@@ -177,7 +159,7 @@ public class LdapAdapterImpl implements DataAdapter {
 
     @Override
     public List<Facility> getFacilitiesByAttribute(@NonNull String attributeName, @NonNull String attrValue) {
-        String[] attributes = new String[] { PERUN_FACILITY_ID, DESCRIPTION, CN };
+        String[] attributes = new String[]{PERUN_FACILITY_ID, DESCRIPTION, CN};
         EntryMapper<Facility> mapper = e -> {
             if (!checkHasAttributes(e, attributes)) {
                 return null;
@@ -210,6 +192,68 @@ public class LdapAdapterImpl implements DataAdapter {
     @Override
     public List<Facility> searchFacilitiesByAttributeValue(@NonNull PerunAttribute attribute) {
         return new ArrayList<>(); //TODO: cannot be implemented
+    }
+
+    @Override
+    public Set<String> getResourceCapabilities(@NonNull Long entityId, @NonNull List<Group> userGroups) {
+        log.trace("getResourceCapabilities({}, {})", entityId, userGroups);
+        Set<String> result = new HashSet<>();
+
+        FilterBuilder filter = and(equal(OBJECT_CLASS, PERUN_RESOURCE),
+                equal(PERUN_FACILITY_ID, String.valueOf(entityId)));
+
+        String[] attributes = new String[]{CAPABILITIES, ASSIGNED_GROUP_ID};
+
+        EntryMapper<CapabilitiesAssignedGroupsPair> mapper = e -> {
+            Set<String> capabilities = new HashSet<>();
+            Set<Long> groupIds = new HashSet<>();
+
+            if (!checkHasAttributes(e, attributes)) {
+                return new CapabilitiesAssignedGroupsPair(capabilities, groupIds);
+            }
+
+            Attribute capabilitiesAttr = e.get(CAPABILITIES);
+            Attribute assignedGroupIds = e.get(ASSIGNED_GROUP_ID);
+
+            if (capabilitiesAttr != null) {
+                capabilitiesAttr.iterator().forEachRemaining(v -> capabilities.add(v.getString()));
+            }
+
+            if (assignedGroupIds != null) {
+                assignedGroupIds.iterator().forEachRemaining(v -> groupIds.add(Long.parseLong(v.getString())));
+            }
+
+            return new CapabilitiesAssignedGroupsPair(capabilities, groupIds);
+        };
+
+        List<CapabilitiesAssignedGroupsPair> capabilitiesAssignedGroupsPairs = connectorLdap.search(null, filter,
+                SearchScope.SUBTREE, attributes, mapper);
+        log.debug("Found capabilities groups pairs: {}", capabilitiesAssignedGroupsPairs);
+
+        capabilitiesAssignedGroupsPairs = capabilitiesAssignedGroupsPairs.stream()
+                .filter(pair -> pair != null
+                        && pair.assignedGroupIds != null
+                        && !pair.assignedGroupIds.isEmpty()
+                        && pair.capabilities != null
+                        && !pair.capabilities.isEmpty())
+                .collect(Collectors.toList());
+        log.debug("Filtered capabilities groups pairs: {}", capabilitiesAssignedGroupsPairs);
+
+        Set<Long> groupIds = userGroups.stream()
+                .map(Group::getId).collect(Collectors.toSet());
+        log.debug("Group IDs: {}", groupIds);
+
+        for (CapabilitiesAssignedGroupsPair pair : capabilitiesAssignedGroupsPairs) {
+            log.debug("Processing capability pair: {}", pair);
+            Set<Long> ids = pair.assignedGroupIds;
+            if (!Collections.disjoint(groupIds, ids)) {
+                log.debug("Added all capabilities form pair: {}", pair);
+                result.addAll(pair.capabilities);
+            }
+        }
+
+        log.trace("getResourceCapabilities({}, {}) returns: {}", entityId, userGroups, result);
+        return result;
     }
 
     private Set<Long> getUserGroupIds(@NonNull Long userId, Long voId) {
@@ -247,12 +291,12 @@ public class LdapAdapterImpl implements DataAdapter {
     }
 
     private List<Group> getGroupsByIds(@NonNull Set<Long> groupIds) {
-        String[] groupAttributes = new String[] { PERUN_GROUP_ID, CN, DESCRIPTION, PERUN_UNIQUE_GROUP_NAME,
-                PERUN_VO_ID, PERUN_PARENT_GROUP_ID };
+        String[] groupAttributes = new String[]{PERUN_GROUP_ID, CN, DESCRIPTION, PERUN_UNIQUE_GROUP_NAME,
+                PERUN_VO_ID, PERUN_PARENT_GROUP_ID};
 
         int i = 0;
         FilterBuilder[] partialFilters = new FilterBuilder[groupIds.size()];
-        for (Long gid: groupIds) {
+        for (Long gid : groupIds) {
             partialFilters[i++] = equal(PERUN_GROUP_ID, String.valueOf(gid));
         }
 
@@ -266,7 +310,7 @@ public class LdapAdapterImpl implements DataAdapter {
     }
 
     private Set<Long> getGroupIdsAssignedToFacility(@NonNull Long facilityId) {
-        String[] attributes = new String[] { ASSIGNED_GROUP_ID };
+        String[] attributes = new String[]{ASSIGNED_GROUP_ID};
         FilterBuilder filter = and(
                 equal(OBJECT_CLASS, PERUN_RESOURCE),
                 equal(PERUN_FACILITY_ID, String.valueOf(facilityId))
@@ -460,6 +504,23 @@ public class LdapAdapterImpl implements DataAdapter {
         Set<T> flatSet = new HashSet<>();
         sets.forEach(flatSet::addAll);
         return flatSet;
+    }
+
+    private static class CapabilitiesAssignedGroupsPair {
+        private Set<String> capabilities;
+        private Set<Long> assignedGroupIds;
+
+        public CapabilitiesAssignedGroupsPair(Set<String> capabilities, Set<Long> groupIds) {
+            this.capabilities = capabilities;
+            this.assignedGroupIds = groupIds;
+        }
+
+        @Override
+        public String toString() {
+            return "CapabilitiesAssignedGroupsPair{" +
+                    "capabilities='" + capabilities + '\'' +
+                    ", assignedGroupIds='" + assignedGroupIds + "'}";
+        }
     }
 
 }

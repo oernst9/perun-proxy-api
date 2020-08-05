@@ -324,6 +324,11 @@ public class RpcAdapterImpl implements FullAdapter {
         return RpcMapper.mapFacilities(perunResponse);
     }
 
+    @Override
+    public Set<String> getResourceCapabilities(@NonNull Long entityId, @NonNull List<Group> userGroups) {
+        return null;
+    }
+
     // private methods
 
     private Map<String, PerunAttributeValue> extractAttrValues(@NonNull Map<String, PerunAttribute> attributeMap) {

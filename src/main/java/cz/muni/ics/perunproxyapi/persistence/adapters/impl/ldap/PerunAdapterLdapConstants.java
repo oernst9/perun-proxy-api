@@ -33,6 +33,7 @@ public class PerunAdapterLdapConstants {
     // RESOURCE
     public static final String PERUN_RESOURCE = "perunResource";
     public static final String PERUN_RESOURCE_ID = "perunResourceId";
+    public static final String CAPABILITIES = "capabilities";
 
     // FACILITY
     public static final String PERUN_FACILITY = "perunFacility";
