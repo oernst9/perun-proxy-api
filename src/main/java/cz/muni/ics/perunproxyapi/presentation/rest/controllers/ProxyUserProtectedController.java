@@ -1,5 +1,6 @@
 package cz.muni.ics.perunproxyapi.presentation.rest.controllers;
 
+import cz.muni.ics.perunproxyapi.application.facade.RelyingPartyFacade;
 import cz.muni.ics.perunproxyapi.application.facade.impl.ProxyuserFacadeImpl;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
@@ -31,7 +32,8 @@ import static cz.muni.ics.perunproxyapi.presentation.rest.config.PathConstants.P
 @Slf4j
 public class ProxyUserProtectedController {
 
-    private final ProxyuserFacadeImpl facade;
+    private final ProxyuserFacadeImpl proxyuserFacade;
+    private final RelyingPartyFacade relyingPartyFacade;
 
     public static final String PARAM_IDP_IDENTIFIER = "IdPIdentifier";
     public static final String PARAM_IDENTIFIERS = "identifiers";
@@ -40,8 +42,9 @@ public class ProxyUserProtectedController {
     public static final String PARAM_USER_ID = "userId";
 
     @Autowired
-    public ProxyUserProtectedController(ProxyuserFacadeImpl facade) {
-        this.facade = facade;
+    public ProxyUserProtectedController(ProxyuserFacadeImpl proxyuserFacade, RelyingPartyFacade relyingPartyFacade) {
+        this.proxyuserFacade = proxyuserFacade;
+        this.relyingPartyFacade = relyingPartyFacade;
     }
 
     @ResponseBody
@@ -51,7 +54,7 @@ public class ProxyUserProtectedController {
                                 @RequestParam(value = PARAM_IDENTIFIERS) List<String> identifiers)
             throws PerunUnknownException, PerunConnectionException
     {
-        return facade.findByExtLogins(idpIdentifier, identifiers);
+        return proxyuserFacade.findByExtLogins(idpIdentifier, identifiers);
     }
 
     @RequestMapping(value = "/{login}", method = RequestMethod.GET,
@@ -60,7 +63,7 @@ public class ProxyUserProtectedController {
                                   @RequestParam(required = false, value = PARAM_FIELDS) List<String> fields)
             throws PerunUnknownException, PerunConnectionException
     {
-        return facade.getUserByLogin(login, fields);
+        return proxyuserFacade.getUserByLogin(login, fields);
     }
 
     /**
@@ -78,7 +81,7 @@ public class ProxyUserProtectedController {
         produces = MediaType.APPLICATION_JSON_VALUE )
     public User findByPerunUserId(@RequestParam(value = PARAM_USER_ID) long userId)
             throws PerunUnknownException, PerunConnectionException {
-        return facade.findByPerunUserId(userId);
+        return proxyuserFacade.findByPerunUserId(userId);
     }
 
 }

@@ -29,13 +29,17 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.CAPABILITIES;
 
 
 @Component(value = "rpcAdapter")
@@ -325,6 +329,40 @@ public class RpcAdapterImpl implements FullAdapter {
         JsonNode perunResponse = connectorRpc.post(SEARCHER, "getFacilities", params);
 
         return RpcMapper.mapFacilities(perunResponse);
+    }
+
+    @Override
+    public Set<String> getResourceCapabilities(Long facilityId, List<Group> groups) throws PerunUnknownException, PerunConnectionException {
+
+        final Set<Long> groupIds = groups.stream().map(Group::getId).collect(Collectors.toSet());
+        log.trace("getResourceCapabilities({}, {})", facilityId, groups);
+
+        if (facilityId == null) {
+            return new LinkedHashSet<>();
+        }
+
+        List<Resource> resources = getAssignedResources(facilityId);
+        Set<String> capabilities = new LinkedHashSet<>();
+
+        for (Resource resource : resources) {
+            Map<String, PerunAttributeValue> attrValue = getAttributesValues(Entity.RESOURCE, resource.getId(), Collections.singletonList(CAPABILITIES));
+
+            List<String> resourceCapabilities = attrValue.get(CAPABILITIES).valueAsList();
+            if (resourceCapabilities == null || resourceCapabilities.size() == 0) {
+                continue;
+            }
+            Set<Long> assignedGroups = getAssignedGroups(resource.getId()).stream().map(Group::getId).collect(Collectors.toSet());
+            assignedGroups.retainAll(groupIds);
+            if (!assignedGroups.isEmpty()) {
+                log.trace("Group found in user's group, add capabilities");
+                capabilities.addAll(resourceCapabilities);
+            } else {
+                log.trace("Group not found, continue to the next one");
+            }
+        }
+
+        log.trace("getResourceCapabilities({}, {}) returns {})", facilityId, groups, capabilities);
+        return capabilities;
     }
 
     // private methods

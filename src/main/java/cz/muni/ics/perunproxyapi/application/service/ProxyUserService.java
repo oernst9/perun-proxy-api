@@ -4,8 +4,10 @@ import cz.muni.ics.perunproxyapi.persistence.adapters.DataAdapter;
 import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
+import cz.muni.ics.perunproxyapi.persistence.models.Group;
 import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
+import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,7 @@ public interface ProxyUserService {
             throws PerunUnknownException, PerunConnectionException;
 
     /**
+<<<<<<< HEAD
      * Get user by given IdP identifier and attribute.
      *
      * @param preferredAdapter Adapter to be used.
@@ -69,4 +72,23 @@ public interface ProxyUserService {
      */
     User findByPerunUserId(DataAdapter preferredAdapter, Long userId) throws PerunUnknownException, PerunConnectionException;
     
+    /**
+     * Get groups the user is member of in particular VO.
+     *
+     * @param userId ID of the USER.
+     * @param voId ID of the VO.
+     * @return Groups from VO that the user is a member of. Including VO members group.
+     */
+    List<Group> getUserGroupsInVo(DataAdapter preferredAdapter, @NonNull Long userId, @NonNull Long voId) throws PerunUnknownException, PerunConnectionException;
+
+    /**
+     *
+     * @param facilityId
+     * @param userId
+     * @return
+     */
+    List<Group> getUsersGroupsOnFacility(DataAdapter preferredAdapter, Long facilityId, Long userId) throws PerunUnknownException, PerunConnectionException;
+
+
+
 }

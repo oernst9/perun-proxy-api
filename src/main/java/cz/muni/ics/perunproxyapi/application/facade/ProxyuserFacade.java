@@ -47,4 +47,11 @@ public interface ProxyuserFacade {
      */
     User findByPerunUserId(Long userId) throws PerunUnknownException, PerunConnectionException;
 
+    /**
+     *
+     * @param userId
+     * @return
+     */
+    List<String> getAllEntitlements(Long userId) throws PerunUnknownException, PerunConnectionException;
+
 }

@@ -5,8 +5,10 @@ import cz.muni.ics.perunproxyapi.persistence.adapters.DataAdapter;
 import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
+import cz.muni.ics.perunproxyapi.persistence.models.Group;
 import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
+import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -36,4 +38,12 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         return preferredAdapter.findPerunUserById(userId);
     }
 
+    public List<Group> getUserGroupsInVo(DataAdapter preferredAdapter, @NonNull Long userId, @NonNull Long voId) throws PerunUnknownException, PerunConnectionException {
+        return preferredAdapter.getUserGroupsInVo(userId, voId);
+    }
+
+    @Override
+    public List<Group> getUsersGroupsOnFacility(DataAdapter preferredAdapter, Long facilityId, Long userId) throws PerunUnknownException, PerunConnectionException {
+        return preferredAdapter.getUsersGroupsOnFacility(facilityId, userId);
+    }
 }

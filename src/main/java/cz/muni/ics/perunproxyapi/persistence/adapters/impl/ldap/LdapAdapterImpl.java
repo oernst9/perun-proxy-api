@@ -20,6 +20,10 @@ import cz.muni.ics.perunproxyapi.persistence.models.User;
 import cz.muni.ics.perunproxyapi.persistence.models.Vo;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.directory.api.ldap.model.entry.Attribute;
+import org.apache.directory.api.ldap.model.message.SearchScope;
+import org.apache.directory.ldap.client.api.search.FilterBuilder;
+import org.apache.directory.ldap.client.template.EntryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ldap.core.ContextMapper;
 import org.springframework.ldap.core.DirContextAdapter;
@@ -31,8 +35,11 @@ import org.springframework.ldap.query.LdapQuery;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import javax.naming.NamingEnumeration;
+import javax.naming.directory.Attributes;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +53,11 @@ import java.util.stream.Collectors;
 import static org.springframework.ldap.query.LdapQueryBuilder.query;
 import static org.springframework.ldap.query.SearchScope.ONELEVEL;
 import static org.springframework.ldap.query.SearchScope.SUBTREE;
+import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.CAPABILITIES;
+import static org.apache.directory.ldap.client.api.search.FilterBuilder.and;
+import static org.apache.directory.ldap.client.api.search.FilterBuilder.equal;
+import static org.apache.directory.ldap.client.api.search.FilterBuilder.or;
+
 
 @Component("ldapAdapter")
 @Slf4j
@@ -242,6 +254,7 @@ public class LdapAdapterImpl implements DataAdapter {
 
     @Override
     public List<Group> getUsersGroupsOnFacility(@NonNull Long facilityId, @NonNull Long userId) {
+        //TODO remake
         Set<Long> groupIdsOnFacility = this.getGroupIdsAssignedToFacility(facilityId);
         Set<Long> groupIdsOfUser = this.getUserGroupIds(userId, null);
 
@@ -254,6 +267,44 @@ public class LdapAdapterImpl implements DataAdapter {
     @Override
     public List<Facility> searchFacilitiesByAttributeValue(@NonNull PerunAttribute attribute) {
         return new ArrayList<>(); //TODO: cannot be implemented
+    }
+
+    @Override
+    public Set<String> getResourceCapabilities(@NonNull Long entityId, @NonNull List<Group> userGroups) {
+        log.trace("getResourceCapabilities({}, {})", entityId, userGroups);
+
+        OrFilter orFilter = new OrFilter();
+        for (Group group : userGroups) {
+            orFilter.or(new EqualsFilter(ASSIGNED_GROUP_ID, String.valueOf(group.getId())));
+        }
+
+        AndFilter filter = new AndFilter();
+        filter.and(new EqualsFilter(OBJECT_CLASS, PERUN_RESOURCE));
+        filter.and(new EqualsFilter(PERUN_FACILITY_ID, String.valueOf(entityId)));
+        filter.and(orFilter);
+
+        LdapQuery query = query()
+                .searchScope(SUBTREE)
+                .attributes(CAPABILITIES)
+                .filter(filter);
+        ContextMapper<Set<String>> mapper = ctx -> {
+            DirContextAdapter context = (DirContextAdapter) ctx;
+            if (!checkHasAttributes(context, query.attributes())) {
+                return null;
+            }
+
+            Set<String> capabilities = new HashSet<>();
+            String[] capabilitiesAttr = context.getStringAttributes(CAPABILITIES);
+
+            return new HashSet<>(Arrays.asList(capabilitiesAttr));
+        };
+
+        List<Set<String>> capabilitiesAssignedGroupsPairs = connectorLdap.search(query, mapper);
+        Set<String> result = capabilitiesAssignedGroupsPairs.stream().flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+
+        log.trace("getResourceCapabilities({}, {}) returns: {}", entityId, userGroups, result);
+        return result;
     }
 
     private Set<Long> getUserGroupIds(@NonNull Long userId, Long voId) {
@@ -551,6 +602,23 @@ public class LdapAdapterImpl implements DataAdapter {
         };
 
         return connectorLdap.searchForObject(query, mapper);
+    }
+
+    private static class CapabilitiesAssignedGroupsPair {
+        private Set<String> capabilities;
+        private Set<Long> assignedGroupIds;
+
+        public CapabilitiesAssignedGroupsPair(Set<String> capabilities, Set<Long> groupIds) {
+            this.capabilities = capabilities;
+            this.assignedGroupIds = groupIds;
+        }
+
+        @Override
+        public String toString() {
+            return "CapabilitiesAssignedGroupsPair{" +
+                    "capabilities='" + capabilities + '\'' +
+                    ", assignedGroupIds='" + assignedGroupIds + "'}";
+        }
     }
 
 }

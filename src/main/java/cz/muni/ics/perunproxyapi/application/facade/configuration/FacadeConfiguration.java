@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +40,10 @@ public class FacadeConfiguration {
 
     @Value("${facade.config_path.relying_party}")
     private String relyingPartyPath;
+
+    public static final String prefix = "prefix";
+    public static final String authority = "authority";
+
 
     private final Map<String, JsonNode> proxyUserAdapterMethodConfigurations = new HashMap<>();
     private final Map<String, JsonNode> relyingPartyAdapterMethodConfigurations = new HashMap<>();

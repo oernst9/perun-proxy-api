@@ -14,6 +14,7 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Methods for fetching data.
@@ -128,5 +129,14 @@ public interface DataAdapter {
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
     List<Facility> searchFacilitiesByAttributeValue(@NonNull PerunAttribute attribute) throws PerunUnknownException, PerunConnectionException;
+
+
+    /**
+     * @param entityId int entityId
+     * @param userGroups array of groups where user belongs to
+     * @return array of resource capabilities
+     */
+    Set<String> getResourceCapabilities(@NonNull Long entityId, @NonNull List<Group> userGroups) throws PerunUnknownException, PerunConnectionException;
+
 
 }
