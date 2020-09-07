@@ -1,10 +1,10 @@
 package cz.muni.ics.perunproxyapi.application.facade;
 
-
-import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
+import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
 import cz.muni.ics.perunproxyapi.presentation.DTOModels.UserDTO;
+import lombok.NonNull;
 
 import java.util.List;
 
@@ -29,6 +29,7 @@ public interface ProxyuserFacade {
     User findByExtLogins(String idpIdentifier, List<String> userIdentifiers) throws PerunUnknownException, PerunConnectionException;
 
     /**
+     * Get user by his/her login.
      *
      * @param login User's login.
      * @param fields List of user's attributes.
@@ -48,10 +49,13 @@ public interface ProxyuserFacade {
     User findByPerunUserId(Long userId) throws PerunUnknownException, PerunConnectionException;
 
     /**
+     * Get entitlements for user.
      *
-     * @param userId
-     * @return
+     * @param login Login of the user.
+     * @return List of AARC formatted entitlements (filled or empty).
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
-    List<String> getAllEntitlements(Long userId) throws PerunUnknownException, PerunConnectionException;
+    List<String> getAllEntitlements(@NonNull String login) throws PerunUnknownException, PerunConnectionException;
 
 }

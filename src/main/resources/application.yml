@@ -25,7 +25,7 @@ connector:
 attributes:
   path: /etc/perun/attributes.yml
   identifiers:
-    facility: 'urn:perun:facility:attribute-def:def:entityID'
+    relying_party: "urn:perun:facility:attribute-def:def:entityID"
 
 facade:
   default_idp: "https://idp.example.com/idp/"

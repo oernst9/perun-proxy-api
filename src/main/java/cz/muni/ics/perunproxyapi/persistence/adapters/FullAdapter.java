@@ -2,8 +2,8 @@ package cz.muni.ics.perunproxyapi.persistence.adapters;
 
 import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
 import cz.muni.ics.perunproxyapi.persistence.enums.MemberStatus;
-import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
+import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.models.Member;
 import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
 import cz.muni.ics.perunproxyapi.persistence.models.UserExtSource;
@@ -29,6 +29,19 @@ public interface FullAdapter extends DataAdapter {
     Map<String, PerunAttribute> getAttributes(@NonNull Entity entity,
                                               @NonNull Long entityId,
                                               @NonNull List<String> attributes) throws PerunUnknownException, PerunConnectionException;
+
+    /**
+     * Get a single attribute for given entity.
+     * @param entity Entity enumeration value. Specifies Perun entity.
+     * @param entityId ID of the entity in Perun.
+     * @param attribute Attribute identifier Specifies what attribute we want to fetch.
+     * @return PerunAttribute or null.
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
+     */
+    PerunAttribute getAttribute(@NonNull Entity entity,
+                                @NonNull Long entityId,
+                                @NonNull String attribute) throws PerunUnknownException, PerunConnectionException;
 
     /**
      * Get UserExtSource by name and login of the user.

@@ -1,8 +1,6 @@
 package cz.muni.ics.perunproxyapi.application.facade.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.google.common.net.UrlEscapers;
 import cz.muni.ics.perunproxyapi.application.facade.FacadeUtils;
 import cz.muni.ics.perunproxyapi.application.facade.RelyingPartyFacade;
 import cz.muni.ics.perunproxyapi.application.facade.configuration.FacadeConfiguration;
@@ -12,14 +10,14 @@ import cz.muni.ics.perunproxyapi.persistence.adapters.DataAdapter;
 import cz.muni.ics.perunproxyapi.persistence.adapters.impl.AdaptersContainer;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
-import cz.muni.ics.perunproxyapi.persistence.models.Group;
+import cz.muni.ics.perunproxyapi.persistence.models.Facility;
+import cz.muni.ics.perunproxyapi.persistence.models.User;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,81 +26,68 @@ import java.util.Map;
 @Slf4j
 public class RelyingPartyFacadeImpl implements RelyingPartyFacade {
 
+    public static final String GET_ENTITLEMENTS = "get_entitlements";
+    public static final String PREFIX = "prefix";
+    public static final String AUTHORITY = "authority";
+    public static final String FORWARDED_ENTITLEMENTS = "forwarded_entitlements";
+    public static final String RESOURCE_CAPABILITIES = "resource_capabilities";
+    public static final String FACILITY_CAPABILITIES = "facility_capabilities";
+
     private final Map<String, JsonNode> methodConfigurations;
     private final AdaptersContainer adaptersContainer;
-    private final ProxyUserService proxyUserService;
     private final RelyingPartyService relyingPartyService;
+    private final ProxyUserService proxyUserService;
     private final String defaultIdpIdentifier;
 
-    public static final String GET_ENTITLEMENTS = "get_entitlements";
-
     @Autowired
-    public RelyingPartyFacadeImpl(@NonNull ProxyUserService proxyUserService,
-                               @NonNull AdaptersContainer adaptersContainer,
-                               @NonNull FacadeConfiguration facadeConfiguration,
-                               @NonNull RelyingPartyService relyingPartyService,
-                               @Value("${facade.default_idp}") String defaultIdp) {
-        this.proxyUserService = proxyUserService;
+    public RelyingPartyFacadeImpl(@NonNull AdaptersContainer adaptersContainer,
+                                  @NonNull FacadeConfiguration facadeConfiguration,
+                                  @NonNull RelyingPartyService relyingPartyService,
+                                  @NonNull ProxyUserService proxyUserService,
+                                  @Value("${facade.default_idp}") String defaultIdp)
+    {
         this.adaptersContainer = adaptersContainer;
-        this.methodConfigurations = facadeConfiguration.getProxyUserAdapterMethodConfigurations();
+        this.methodConfigurations = facadeConfiguration.getRelyingPartyAdapterMethodConfigurations();
         this.relyingPartyService = relyingPartyService;
-
+        this.proxyUserService = proxyUserService;
         this.defaultIdpIdentifier = defaultIdp;
     }
 
     @Override
-    public List<String> getEntitlements(Long facilityId, Long userId) throws PerunUnknownException, PerunConnectionException {
-        JsonNode options = methodConfigurations.getOrDefault(GET_ENTITLEMENTS, JsonNodeFactory.instance.nullNode());
+    public List<String> getEntitlements(@NonNull String rpIdentifier, @NonNull String login)
+            throws PerunUnknownException, PerunConnectionException
+    {
+        JsonNode options = FacadeUtils.getOptions(GET_ENTITLEMENTS, methodConfigurations);
         DataAdapter adapter = FacadeUtils.getAdapter(adaptersContainer, options);
-        List<String> result = new ArrayList<>();
-        List<Group> groups = proxyUserService.getUsersGroupsOnFacility(adapter, facilityId, userId);
-        if (groups == null || groups.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<String> eduPersonEntitlement = getGroupEntitlements(groups);
-        List<String> capabilities = getCapabilities(adapter, facilityId, groups);
-        List<String> forwardedEduPersonEntitlement = relyingPartyService.getForwardedEntitlement(adapter, userId)
-                .valueAsList();
 
-        result.addAll(eduPersonEntitlement);
-        result.addAll(capabilities);
-        result.addAll(forwardedEduPersonEntitlement);
-        return result;
-    }
+        String prefix = FacadeUtils.getRequiredStringOption(PREFIX, options);
+        String authority =FacadeUtils.getRequiredStringOption(AUTHORITY, options);
 
-    private List<String> getCapabilities(DataAdapter preferredAdapter, Long facilityId, List<Group> groups) throws PerunUnknownException, PerunConnectionException {
-        List<String> capabilities = new ArrayList<>();
-        capabilities.addAll(relyingPartyService.getResourceCapabilities(preferredAdapter, facilityId, groups));
-        if (!groups.isEmpty()) {
-            capabilities.addAll(relyingPartyService.getFacilityCapabilities(preferredAdapter, facilityId));
-        }
-        for (int i = 0; i < capabilities.size(); i++) {
-            capabilities.set(i, wrapCapabilityToAARC(capabilities.get(i)));
+        String forwardedEntitlementsAttrIdentifier = FacadeUtils.getStringOption(FORWARDED_ENTITLEMENTS, options);
+        String resourceCapabilitiesAttrIdentifier = FacadeUtils.getStringOption(RESOURCE_CAPABILITIES, options);
+        String facilityCapabilitiesAttrIdentifier = FacadeUtils.getStringOption(FACILITY_CAPABILITIES, options);
+
+        User user = proxyUserService.findByExtLogin(adapter, defaultIdpIdentifier, login);
+        if (user == null || user.getId() == null) {
+            log.error("No user found for login {} with Idp {}. Cannot look for entitlements, return error.",
+                    login, defaultIdpIdentifier);
+            throw new IllegalArgumentException("User for given login could not be found");
         }
 
-        return capabilities;
-    }
-
-    private List<String> getGroupEntitlements(List<Group> groups) {
-        List<String> eduPersonEntitlement = new ArrayList<>();
-        if (FacadeConfiguration.prefix.trim().isEmpty() || FacadeConfiguration.authority.trim().isEmpty()) {
-            throw new RuntimeException("Missing mandatory configuration options 'prefix' or 'authority'."); //what exception to throw
+        Facility facility = relyingPartyService.getFacilityByIdentifier(adapter, rpIdentifier);
+        if (facility == null || facility.getId() == null) {
+            log.error("No facility found for rpIdentifier {}. Cannot look for  entitlements, return error.",
+                    rpIdentifier);
+            throw new IllegalArgumentException("User for given login could not be found");
         }
-        for (Group group : groups) {
-            String groupName = group.getUniqueGroupName();
-            groupName = groupName.replaceAll("/^(\\w*)\\:members$/", "$1");
-            groupName = wrapGroupNameToAARC(groupName);
-            eduPersonEntitlement.add(groupName);
+
+        List<String> entitlements = relyingPartyService.getEntitlements(
+                adapter, facility.getId(), user.getId(), prefix, authority, forwardedEntitlementsAttrIdentifier,
+                resourceCapabilitiesAttrIdentifier, facilityCapabilitiesAttrIdentifier);
+        if (entitlements != null) {
+            Collections.sort(entitlements);
         }
-        Collections.sort(eduPersonEntitlement);
-        return eduPersonEntitlement;
+        return entitlements;
     }
 
-    private String wrapGroupNameToAARC(String groupName) {
-        return FacadeConfiguration.prefix + "group:" + UrlEscapers.urlPathSegmentEscaper().escape(groupName) + "#" + FacadeConfiguration.authority;
-    }
-
-    private String wrapCapabilityToAARC(String capability) {
-        return FacadeConfiguration.prefix + UrlEscapers.urlPathSegmentEscaper().escape(capability) + "#" + FacadeConfiguration.authority;
-    }
 }

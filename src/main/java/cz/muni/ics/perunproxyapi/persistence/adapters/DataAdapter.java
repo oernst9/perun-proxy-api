@@ -2,11 +2,10 @@ package cz.muni.ics.perunproxyapi.persistence.adapters;
 
 
 import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
-import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
+import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.models.Facility;
 import cz.muni.ics.perunproxyapi.persistence.models.Group;
-import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
 import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
 import cz.muni.ics.perunproxyapi.persistence.models.Vo;
@@ -14,7 +13,6 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Methods for fetching data.
@@ -44,12 +42,11 @@ public interface DataAdapter {
      * Get groups the user is member of in particular VO.
      *
      * @param userId ID of the USER.
-     * @param voId ID of the VO.
-     * @return Groups from VO that the user is a member of. Including VO members group.
+     * @return Groups that the user is a member of. Including VO members group.
      * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
-    List<Group> getUserGroupsInVo(@NonNull Long userId, @NonNull Long voId) throws PerunUnknownException, PerunConnectionException;
+    List<Group> getUserGroups(@NonNull Long userId) throws PerunUnknownException, PerunConnectionException;
 
     /**
      * Get groups with access to the SP.
@@ -102,6 +99,18 @@ public interface DataAdapter {
                                                          @NonNull List<String> attributes) throws PerunUnknownException, PerunConnectionException;
 
     /**
+     * Get value for a single attribute for given entity.
+     * @param entity Entity enumeration value. Specifies Perun entity.
+     * @param entityId ID of the entity in Perun.
+     * @param attribute Attribute identifier Specifies what attribute we want to fetch.
+     * @return PerunAttributeValue or null.
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
+     */
+    PerunAttributeValue getAttributeValue(@NonNull Entity entity, @NonNull Long entityId, @NonNull String attribute)
+            throws PerunUnknownException, PerunConnectionException;
+
+    /**
      * Get Facilities that have specified attribute with given value.
      * @param attributeName Identifier of the attribute.
      * @param attrValue Value of the attribute as String.
@@ -110,6 +119,16 @@ public interface DataAdapter {
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
     List<Facility> getFacilitiesByAttribute(@NonNull String attributeName, @NonNull String attrValue) throws PerunUnknownException, PerunConnectionException;
+
+    /**
+     * Get facility representing the RP by it's identifier.
+     * @param rpIdentifier Actual identifier of the RP (ClientID or EntityID)
+     * @return Found facility representing the RP or NULL.
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
+     */
+    Facility getFacilityByRpIdentifier(@NonNull String rpIdentifier)
+            throws PerunUnknownException, PerunConnectionException;
 
     /**
      * Get groups the user is member of and are assigned (have access) to the SP.
@@ -122,21 +141,31 @@ public interface DataAdapter {
     List<Group> getUsersGroupsOnFacility(@NonNull Long facilityId, @NonNull Long userId) throws PerunUnknownException, PerunConnectionException;
 
     /**
-     * Search for facilities by value of the attribute.
-     * @param attribute The whole attribute object with value.
-     * @return List of Facilities.
+     * Get entitlements forwarded from external sources.
+     * @param userId ID of the user.
+     * @param entitlementsIdentifier Identifier of the attribute containing the forwarded entitlements.
+     * @return List of entitlements (filled or empty).
      * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
-    List<Facility> searchFacilitiesByAttributeValue(@NonNull PerunAttribute attribute) throws PerunUnknownException, PerunConnectionException;
-
+    List<String> getForwardedEntitlements(@NonNull Long userId, String entitlementsIdentifier)
+            throws PerunUnknownException, PerunConnectionException;
 
     /**
-     * @param entityId int entityId
-     * @param userGroups array of groups where user belongs to
-     * @return array of resource capabilities
+     * Get capabilities for user based on the service he/she is accessing
+     * @param facilityId ID of facility representing the service
+     * @param userId ID of user
+     * @param userGroupsOnFacility List of groups user is member of and are assigned to facility.
+     * @param resourceCapabilitiesAttrIdentifier Identifier of the attribute containing the resource capabilities.
+     * @param facilityCapabilitiesAttrIdentifier Identifier of the attribute containing the resource capabilities.
+     * @return List of found capabilities (filled or empty).
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
-    Set<String> getResourceCapabilities(@NonNull Long entityId, @NonNull List<Group> userGroups) throws PerunUnknownException, PerunConnectionException;
-
+    List<String> getCapabilities(@NonNull Long facilityId, @NonNull Long userId,
+                                 @NonNull List<Group> userGroupsOnFacility,
+                                 String resourceCapabilitiesAttrIdentifier,
+                                 String facilityCapabilitiesAttrIdentifier)
+            throws PerunConnectionException, PerunUnknownException;
 
 }

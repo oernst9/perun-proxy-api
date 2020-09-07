@@ -1,55 +1,59 @@
 package cz.muni.ics.perunproxyapi.application.service.impl;
 
 import cz.muni.ics.perunproxyapi.application.service.RelyingPartyService;
+import cz.muni.ics.perunproxyapi.application.service.ServiceUtils;
 import cz.muni.ics.perunproxyapi.persistence.adapters.DataAdapter;
-import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.persistence.models.Facility;
 import cz.muni.ics.perunproxyapi.persistence.models.Group;
-import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
 import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-
-import static cz.muni.ics.perunproxyapi.persistence.adapters.impl.ldap.PerunAdapterLdapConstants.CAPABILITIES;
+import java.util.stream.Collectors;
 
 @Component
 public class RelyingPartyServiceImpl implements RelyingPartyService {
 
     @Override
-    public Set<String> getResourceCapabilities(DataAdapter preferredAdapter, Long facilityId, List<Group> userGroups) throws PerunUnknownException, PerunConnectionException {
-        return preferredAdapter.getResourceCapabilities(facilityId, userGroups);
-    }
+    public List<String> getEntitlements(@NonNull DataAdapter adapter, @NonNull Long facilityId,
+                                        @NonNull Long userId, @NonNull String prefix, @NonNull String authority,
+                                        String forwardedEntitlementsAttrIdentifier,
+                                        String resourceCapabilitiesAttrIdentifier,
+                                        String facilityCapabilitiesAttrIdentifier)
+            throws PerunUnknownException, PerunConnectionException
+    {
+        List<String> entitlements = new ArrayList<>(
+                adapter.getForwardedEntitlements(userId, forwardedEntitlementsAttrIdentifier)
+        );
 
-    @Override
-    public Set<String> getFacilityCapabilities(DataAdapter preferredAdapter, Long facilityId) throws PerunUnknownException, PerunConnectionException {
-        Set<String> result = new HashSet<>();
-        PerunAttributeValue attrVal = preferredAdapter.getAttributesValues(Entity.FACILITY, facilityId,
-                Collections.singletonList(CAPABILITIES)).get(CAPABILITIES);
-        if (attrVal.valueAsList() != null) {
-            result = new HashSet<>(attrVal.valueAsList());
+        List<Group> groups = adapter.getUsersGroupsOnFacility(facilityId, userId);
+        if (groups == null || groups.isEmpty()) {
+            return entitlements;
         }
-        return result;
-    }
 
-    @Override
-    public PerunAttributeValue getForwardedEntitlement(DataAdapter preferredAdapter, Long userId) throws PerunUnknownException, PerunConnectionException {
-        if (userId == null) {
-            return null;
+        List<String> groupEntitlements = ServiceUtils.wrapGroupEntitlements(groups, prefix, authority);
+        entitlements.addAll(groupEntitlements);
+
+        List<String> capabilities = adapter.getCapabilities(facilityId, userId, groups,
+                resourceCapabilitiesAttrIdentifier, facilityCapabilitiesAttrIdentifier);
+        if (capabilities != null && !capabilities.isEmpty()) {
+            entitlements.addAll(capabilities.stream()
+                    .map(cap -> ServiceUtils.wrapCapabilityToAARC(cap, prefix, authority))
+                    .collect(Collectors.toSet())
+            );
         }
-        PerunAttributeValue forwardedEduPersonEntitlement = preferredAdapter
-                .getAttributesValues(Entity.USER, userId, Collections.singletonList("forwardedEduPersonEntitlement"))
-                .get("forwardedEduPersonEntitlement");
-        return forwardedEduPersonEntitlement;
+
+        return entitlements;
     }
 
     @Override
-    public List<Facility> getFacilitiesByAttribute(DataAdapter preferredAdapter, @NonNull String attributeName, @NonNull String attrValue) throws PerunUnknownException, PerunConnectionException {
-        return preferredAdapter.getFacilitiesByAttribute(attributeName, attrValue);
+    public Facility getFacilityByIdentifier(@NonNull DataAdapter adapter, @NonNull String rpIdentifier)
+            throws PerunUnknownException, PerunConnectionException
+    {
+        return adapter.getFacilityByRpIdentifier(rpIdentifier);
     }
+
 }
