@@ -54,6 +54,15 @@ public interface FullAdapter extends DataAdapter {
     UserExtSource getUserExtSource(@NonNull String extSourceName, @NonNull String extSourceLogin) throws PerunUnknownException, PerunConnectionException;
 
     /**
+     * Get UserExtSources by the userId
+     * @param userId the id of the user whose extSources are to be obtained
+     * @return list of UserExtSources
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
+     */
+    List<UserExtSource> getUserExtSources(@NonNull Long userId) throws PerunUnknownException, PerunConnectionException;
+
+    /**
      * Get status of user in VO.
      * @param userId ID of the user.
      * @param voId ID of the VO.
@@ -92,5 +101,4 @@ public interface FullAdapter extends DataAdapter {
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
     Member getMemberByUser(@NonNull Long userId, @NonNull Long voId) throws PerunUnknownException, PerunConnectionException;
-
 }

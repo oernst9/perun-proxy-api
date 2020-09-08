@@ -1,11 +1,15 @@
 package cz.muni.ics.perunproxyapi.application.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import cz.muni.ics.perunproxyapi.persistence.adapters.DataAdapter;
+import cz.muni.ics.perunproxyapi.persistence.adapters.FullAdapter;
 import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
+import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
 import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
+import cz.muni.ics.perunproxyapi.persistence.models.UserExtSource;
 import lombok.NonNull;
 
 import java.util.List;
@@ -89,6 +93,7 @@ public interface ProxyUserService {
                                     String forwardedEntitlementsAttrIdentifier)
             throws PerunUnknownException, PerunConnectionException;
 
+
     /**
      * Get user with attributes by login.
      * @param preferredAdapter Adapter for connection to be used.
@@ -127,5 +132,46 @@ public interface ProxyUserService {
                            @NonNull String idpIdentifier,
                            @NonNull List<String> identifiers,
                            @NonNull List<String> attrIdentifiers);
+
+    /**
+     *
+     * @param adapter
+     * @param extSourceName
+     * @param extSourceLogin
+     * @return
+     * @throws PerunUnknownException
+     * @throws PerunConnectionException
+     */
+    UserExtSource getUserExtSource(@NonNull FullAdapter adapter, @NonNull String extSourceName,
+                                   @NonNull String extSourceLogin)
+            throws PerunUnknownException, PerunConnectionException;
+
+    /**
+     *
+     * @param adapter
+     * @param userId
+     * @return
+     * @throws PerunUnknownException
+     * @throws PerunConnectionException
+     */
+    List<UserExtSource> getUserExtSources(@NonNull FullAdapter adapter, @NonNull Long userId) throws PerunUnknownException, PerunConnectionException;
+
+    /**
+     *
+     * @param login
+     * @param identityId
+     * @param requestAttributesMap
+     * @param adapter
+     * @param attributeMapper
+     * @param attributesToFindUes
+     * @return
+     * @throws PerunUnknownException
+     * @throws PerunConnectionException
+     */
+    boolean updateUserIdentityAttributes(@NonNull String login, @NonNull String identityId,
+                                                @NonNull Map<String, JsonNode> requestAttributesMap,
+                                                @NonNull FullAdapter adapter, @NonNull Map<String, String> attributeMapper,
+                                                @NonNull List<String> attributesToFindUes)
+            throws PerunUnknownException, PerunConnectionException;
 
 }

@@ -31,6 +31,8 @@ import java.util.stream.IntStream;
  */
 public class RpcMapper {
 
+    private String entity;
+
     /**
      * Maps JsonNode to User model.
      * @param json User in JSON format from Perun to be mapped.

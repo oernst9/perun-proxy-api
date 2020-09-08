@@ -1,16 +1,26 @@
 package cz.muni.ics.perunproxyapi.application.facade.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import cz.muni.ics.perunproxyapi.application.facade.FacadeUtils;
 import cz.muni.ics.perunproxyapi.application.facade.ProxyuserFacade;
 import cz.muni.ics.perunproxyapi.application.facade.configuration.FacadeConfiguration;
 import cz.muni.ics.perunproxyapi.application.service.ProxyUserService;
 import cz.muni.ics.perunproxyapi.persistence.adapters.DataAdapter;
+import cz.muni.ics.perunproxyapi.persistence.adapters.FullAdapter;
 import cz.muni.ics.perunproxyapi.persistence.adapters.impl.AdaptersContainer;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.EntityNotFoundException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
+import cz.muni.ics.perunproxyapi.persistence.adapters.impl.rpc.RpcMapper;
+import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
+import cz.muni.ics.perunproxyapi.persistence.exceptions.InternalErrorException;
+import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
+import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
+import cz.muni.ics.perunproxyapi.persistence.models.UserExtSource;
 import cz.muni.ics.perunproxyapi.presentation.DTOModels.UserDTO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +30,11 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -32,11 +45,13 @@ public class ProxyuserFacadeImpl implements ProxyuserFacade {
     public static final String GET_USER_BY_LOGIN = "get_user_by_login";
     public static final String FIND_BY_PERUN_USER_ID = "find_by_perun_user_id";
     public static final String GET_ALL_ENTITLEMENTS = "get_all_entitlements";
+    public static final String UPDATE_USER_IDENTITY_ATTRIBUTES = "update_user_identity_attributes";
 
     public static final String PREFIX = "prefix";
     public static final String AUTHORITY = "authority";
     public static final String FORWARDED_ENTITLEMENTS = "forwarded_entitlements";
     public static final String DEFAULT_FIELDS = "default_fields";
+    public static final String ATTRIBUTE_MAP = "attribute_map";
 
     private final Map<String, JsonNode> methodConfigurations;
     private final AdaptersContainer adaptersContainer;
@@ -152,7 +167,7 @@ public class ProxyuserFacadeImpl implements ProxyuserFacade {
         }
 
         for (JsonNode subNode : options.get(DEFAULT_FIELDS)) {
-            if (!subNode.isNull()){
+            if (!subNode.isNull()) {
                 String attr = subNode.asText();
                 if (StringUtils.hasText(attr)) {
                     fields.add(attr);
@@ -162,4 +177,23 @@ public class ProxyuserFacadeImpl implements ProxyuserFacade {
         return fields;
     }
 
+    @Override
+    public boolean updateUserIdentityAttributes(@NonNull String login, @NonNull String identityId,
+                                                @NonNull Map<String, JsonNode> requestAttributesMap)
+            throws PerunUnknownException, PerunConnectionException {
+        JsonNode options = FacadeUtils.getOptions(UPDATE_USER_IDENTITY_ATTRIBUTES, methodConfigurations);
+        if (!options.hasNonNull(ATTRIBUTE_MAP)) {
+            log.error("Required option {} has not been found by the getEntitlements method. " +
+                    "Check your configuration.", ATTRIBUTE_MAP);
+            throw new IllegalArgumentException("Required option has not been found");
+        }
+        JsonNode attributeMapper = options.get(ATTRIBUTE_MAP);
+        Map<String, String> attributeNameMapperToPerun = new ObjectMapper().convertValue(attributeMapper, new TypeReference<>() {
+        });
+        List<String> attributesToFindUes = new ObjectMapper().convertValue(options.get("attribute_map"), new TypeReference<>() {
+        });
+        FullAdapter adapter = adaptersContainer.getRpcAdapter();
+
+        return proxyUserService.updateUserIdentityAttributes(login, identityId, requestAttributesMap, adapter, attributeNameMapperToPerun, attributesToFindUes);
+    }
 }

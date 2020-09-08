@@ -1,12 +1,14 @@
 package cz.muni.ics.perunproxyapi.application.facade;
 
 import cz.muni.ics.perunproxyapi.persistence.exceptions.EntityNotFoundException;
+import com.fasterxml.jackson.databind.JsonNode;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
 import cz.muni.ics.perunproxyapi.presentation.DTOModels.UserDTO;
 import lombok.NonNull;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Facade for proxyuser related things. Purpose of this class is to execute correct lower-level methods
@@ -76,5 +78,17 @@ public interface ProxyuserFacade {
      */
     List<String> getAllEntitlements(@NonNull String login)
             throws PerunUnknownException, PerunConnectionException, EntityNotFoundException;
+
+    /**
+     * Update UserExtSource attributes
+     * @param login login of the user
+     * @return true if the attributes were updated properly, false otherwise
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
+     */
+    boolean updateUserIdentityAttributes(@NonNull String login,
+                                         @NonNull String identityId,
+                                         @NonNull Map<String, JsonNode> attributes)
+            throws PerunUnknownException, PerunConnectionException;
 
 }
