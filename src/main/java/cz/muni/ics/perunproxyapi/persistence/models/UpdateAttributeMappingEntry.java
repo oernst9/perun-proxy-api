@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class UpdateAttributeMappingEntry {
     }
 
     public void setExternalNames(@NonNull List<String> externalNames) {
-        if (externalNames == null || externalNames.isEmpty()) {
+        if (externalNames.isEmpty()) {
             throw new IllegalArgumentException("External names cannot be null nor empty");
         }
         
