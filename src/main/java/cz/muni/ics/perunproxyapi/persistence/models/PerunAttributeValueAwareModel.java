@@ -180,7 +180,7 @@ public abstract class PerunAttributeValueAwareModel {
                 " for object: " + this.toString());
     }
 
-    private static boolean isNullValue(JsonNode value) {
+    public static boolean isNullValue(JsonNode value) {
         return value == null ||
                 value instanceof NullNode ||
                 value.isNull() ||

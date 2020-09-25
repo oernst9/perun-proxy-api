@@ -80,15 +80,15 @@ public interface ProxyuserFacade {
             throws PerunUnknownException, PerunConnectionException, EntityNotFoundException;
 
     /**
-     * Update UserExtSource attributes
-     * @param login login of the user
-     * @return true if the attributes were updated properly, false otherwise
+     * Update User identity attributes.
+     * @param login Login of the user.
+     * @return TRUE if the requestAttributes were updated properly, FALSE otherwise
      * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
     boolean updateUserIdentityAttributes(@NonNull String login,
                                          @NonNull String identityId,
-                                         @NonNull Map<String, JsonNode> attributes)
+                                         @NonNull Map<String, JsonNode> requestAttributes)
             throws PerunUnknownException, PerunConnectionException;
 
 }

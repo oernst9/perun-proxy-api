@@ -3,7 +3,6 @@ package cz.muni.ics.perunproxyapi.application.facade.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import cz.muni.ics.perunproxyapi.application.facade.FacadeUtils;
 import cz.muni.ics.perunproxyapi.application.facade.ProxyuserFacade;
 import cz.muni.ics.perunproxyapi.application.facade.configuration.FacadeConfiguration;
@@ -14,13 +13,8 @@ import cz.muni.ics.perunproxyapi.persistence.adapters.impl.AdaptersContainer;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.EntityNotFoundException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
-import cz.muni.ics.perunproxyapi.persistence.adapters.impl.rpc.RpcMapper;
-import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
-import cz.muni.ics.perunproxyapi.persistence.exceptions.InternalErrorException;
-import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
-import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
+import cz.muni.ics.perunproxyapi.persistence.models.UpdateAttributeMappingEntry;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
-import cz.muni.ics.perunproxyapi.persistence.models.UserExtSource;
 import cz.muni.ics.perunproxyapi.presentation.DTOModels.UserDTO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +27,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -51,7 +44,7 @@ public class ProxyuserFacadeImpl implements ProxyuserFacade {
     public static final String AUTHORITY = "authority";
     public static final String FORWARDED_ENTITLEMENTS = "forwarded_entitlements";
     public static final String DEFAULT_FIELDS = "default_fields";
-    public static final String ATTRIBUTE_MAP = "attribute_map";
+    public static final String ATTR_MAPPER = "attrMapper";
 
     private final Map<String, JsonNode> methodConfigurations;
     private final AdaptersContainer adaptersContainer;
@@ -158,6 +151,39 @@ public class ProxyuserFacadeImpl implements ProxyuserFacade {
         return entitlements;
     }
 
+    @Override
+    public boolean updateUserIdentityAttributes(@NonNull String login, @NonNull String identityId,
+                                                @NonNull Map<String, JsonNode> requestAttributes)
+            throws PerunUnknownException, PerunConnectionException
+    {
+        JsonNode options = FacadeUtils.getOptions(UPDATE_USER_IDENTITY_ATTRIBUTES, methodConfigurations);
+        if (!options.hasNonNull(ATTR_MAPPER)) {
+            log.error("Required option {} has not been found by the updateUserIdentityAttributes method. " +
+                    "Check your configuration.", ATTR_MAPPER);
+            throw new IllegalArgumentException("Required option has not been found");
+        }
+        JsonNode attributeMapper = options.get(ATTR_MAPPER);
+        Map<String, UpdateAttributeMappingEntry> mapper = new ObjectMapper()
+                .convertValue(attributeMapper, new TypeReference<>() {});
+        FullAdapter adapter = adaptersContainer.getRpcAdapter();
+
+        final Map<String, String> externalToInternal = new HashMap<>();
+        List<String> searchAttributes = mapper.entrySet()
+                .stream()
+                .peek(entry -> {
+                    List<String> externalNames = entry.getValue().getExternalNames();
+                    String internalName = entry.getKey();
+                    for (String externalName: externalNames) {
+                        externalToInternal.put(externalName, internalName);
+                    }
+                })
+                .filter(entry -> entry.getValue().isUseForSearch())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        return proxyUserService.updateUserIdentityAttributes(login, identityId, adapter, requestAttributes,
+                mapper, externalToInternal, searchAttributes);
+    }
+
     private List<String> getDefaultFields(JsonNode options) {
         List<String> fields = new ArrayList<>();
         if (!options.hasNonNull(DEFAULT_FIELDS)) {
@@ -177,23 +203,4 @@ public class ProxyuserFacadeImpl implements ProxyuserFacade {
         return fields;
     }
 
-    @Override
-    public boolean updateUserIdentityAttributes(@NonNull String login, @NonNull String identityId,
-                                                @NonNull Map<String, JsonNode> requestAttributesMap)
-            throws PerunUnknownException, PerunConnectionException {
-        JsonNode options = FacadeUtils.getOptions(UPDATE_USER_IDENTITY_ATTRIBUTES, methodConfigurations);
-        if (!options.hasNonNull(ATTRIBUTE_MAP)) {
-            log.error("Required option {} has not been found by the getEntitlements method. " +
-                    "Check your configuration.", ATTRIBUTE_MAP);
-            throw new IllegalArgumentException("Required option has not been found");
-        }
-        JsonNode attributeMapper = options.get(ATTRIBUTE_MAP);
-        Map<String, String> attributeNameMapperToPerun = new ObjectMapper().convertValue(attributeMapper, new TypeReference<>() {
-        });
-        List<String> attributesToFindUes = new ObjectMapper().convertValue(options.get("attribute_map"), new TypeReference<>() {
-        });
-        FullAdapter adapter = adaptersContainer.getRpcAdapter();
-
-        return proxyUserService.updateUserIdentityAttributes(login, identityId, requestAttributesMap, adapter, attributeNameMapperToPerun, attributesToFindUes);
-    }
 }

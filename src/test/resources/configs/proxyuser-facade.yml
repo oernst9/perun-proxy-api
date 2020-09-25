@@ -12,9 +12,8 @@
       - "urn:attrname:attribute2"
 - methodName: "update_user_identity_attributes"
   options:
-    attribute_map:
-      attr_name_external: "internal_identifier"
-    ext_source_attributes:
-      - "attr1"
-      - "attr2"
-    adapter: "RPC"
+    attrMapper:
+      attrIdentifier1:
+        externalNames: ["name1", "name2"]
+        appendOnly: false
+        useForSearch: false

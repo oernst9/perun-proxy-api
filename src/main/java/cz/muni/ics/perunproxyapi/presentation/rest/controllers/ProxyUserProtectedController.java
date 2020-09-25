@@ -1,14 +1,13 @@
 package cz.muni.ics.perunproxyapi.presentation.rest.controllers;
 
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import cz.muni.ics.perunproxyapi.application.facade.ProxyuserFacade;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.EntityNotFoundException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.InvalidRequestParameterException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
-import com.fasterxml.jackson.databind.JsonNode;
 import cz.muni.ics.perunproxyapi.presentation.DTOModels.UserDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -209,11 +210,14 @@ public class ProxyUserProtectedController {
      * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
     @ResponseBody
-    @PutMapping(value = "/{login}/identity/{identityId}", produces = APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/{login}/identity",
+            produces = APPLICATION_JSON_VALUE,
+            consumes = APPLICATION_JSON_VALUE)
     public boolean updateUserIdentityAttributes(@PathVariable(value = LOGIN) String login,
-                                               @PathVariable(value = IDENTITY_ID) String identityId,
-                                               @RequestBody JsonNode body)
-            throws PerunUnknownException, PerunConnectionException, InvalidRequestParameterException {
+                                                @RequestParam(value = IDENTITY_ID) String identityId,
+                                                @RequestBody JsonNode body)
+            throws PerunUnknownException, PerunConnectionException, InvalidRequestParameterException
+    {
         if (body == null || !body.hasNonNull("attributes")) {
             throw new InvalidRequestParameterException("The request body cannot be null and must contain attributes");
         }
@@ -223,9 +227,13 @@ public class ProxyUserProtectedController {
         if (!StringUtils.hasText(identityId)) {
             throw new InvalidRequestParameterException("identityId cannot be empty");
         }
-        JsonNode jsonAttributes = body.get("attributes");
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, JsonNode> attributes = mapper.convertValue(jsonAttributes, new TypeReference<>(){});
+        ObjectNode jsonAttributes = (ObjectNode) body.get("attributes");
+        Map<String, JsonNode> attributes = new HashMap<>();
+        Iterator<String> it = jsonAttributes.fieldNames();
+        while (it.hasNext()) {
+            String fieldName = it.next();
+            attributes.put(fieldName, jsonAttributes.get(fieldName));
+        }
         return facade.updateUserIdentityAttributes(login, identityId, attributes);
     }
 

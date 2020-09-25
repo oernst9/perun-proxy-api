@@ -137,7 +137,7 @@ public class RpcAdapterImpl implements FullAdapter {
                 .collect(Collectors.toList());
 
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put(entity.toString().toLowerCase(), entityId);
+        params.put(entity.toString(), entityId);
         params.put(PARAM_ATTR_NAMES, rpcNames);
 
         JsonNode perunResponse = connectorRpc.post(ATTRIBUTES_MANAGER, "getAttributes", params);
@@ -152,7 +152,7 @@ public class RpcAdapterImpl implements FullAdapter {
     {
         AttributeObjectMapping mapping = this.getMappingForAttrName(attrToFetch);
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put(entity.toString().toLowerCase(), entityId);
+        params.put(entity.toString(), entityId);
         params.put(PARAM_ATTRIBUTE_NAME, mapping.getRpcName());
 
         JsonNode perunResponse = connectorRpc.post(ATTRIBUTES_MANAGER, "getAttribute", params);
@@ -200,7 +200,7 @@ public class RpcAdapterImpl implements FullAdapter {
             throws PerunUnknownException, PerunConnectionException
     {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put(entity.toString().toLowerCase(), entityId);
+        params.put(entity.toString(), entityId);
         params.put(PARAM_ATTRIBUTES, attributes);
 
         JsonNode perunResponse = connectorRpc.post(ATTRIBUTES_MANAGER, "setAttributes", params);
@@ -212,7 +212,7 @@ public class RpcAdapterImpl implements FullAdapter {
             throws PerunUnknownException, PerunConnectionException
     {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put(PARAM_USER_EXT_SOURCE, userExtSource);
+        params.put(PARAM_USER_EXT_SOURCE, userExtSource.getId());
 
         JsonNode perunResponse = connectorRpc.post(USERS_MANAGER, "updateUserExtSourceLastAccess", params);
         return (perunResponse instanceof NullNode || perunResponse == null || perunResponse.isNull());

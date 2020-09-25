@@ -6,10 +6,9 @@ import cz.muni.ics.perunproxyapi.persistence.adapters.FullAdapter;
 import cz.muni.ics.perunproxyapi.persistence.enums.Entity;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunConnectionException;
 import cz.muni.ics.perunproxyapi.persistence.exceptions.PerunUnknownException;
-import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
 import cz.muni.ics.perunproxyapi.persistence.models.PerunAttributeValue;
+import cz.muni.ics.perunproxyapi.persistence.models.UpdateAttributeMappingEntry;
 import cz.muni.ics.perunproxyapi.persistence.models.User;
-import cz.muni.ics.perunproxyapi.persistence.models.UserExtSource;
 import lombok.NonNull;
 
 import java.util.List;
@@ -134,44 +133,27 @@ public interface ProxyUserService {
                            @NonNull List<String> attrIdentifiers);
 
     /**
-     *
-     * @param adapter
-     * @param extSourceName
-     * @param extSourceLogin
-     * @return
-     * @throws PerunUnknownException
-     * @throws PerunConnectionException
+     * Update attributes of the specified user identity.
+     * @param login Login of the user
+     * @param identityId Identifier of identity
+     * @param adapter Adapter to be used.
+     * @param requestAttributes Attributes from request that should be updated.
+     *                          Key is the external name, value is the new value.
+     * @param mapper Map of internal attribute names to external with boolean flag if new values should
+     *               be replaced or appended and boolean flag if the internal name is used for searching.
+     * @param externalToInternalMapping Map of external names to internal identifiers.
+     * @param attrsToSearchBy Attributes by which to look for the correct identity.
+     * @return TRUE if updated, FALSE otherwise.
+     * @throws PerunUnknownException Thrown as wrapper of unknown exception thrown by Perun interface.
+     * @throws PerunConnectionException Thrown when problem with connection to Perun interface occurs.
      */
-    UserExtSource getUserExtSource(@NonNull FullAdapter adapter, @NonNull String extSourceName,
-                                   @NonNull String extSourceLogin)
-            throws PerunUnknownException, PerunConnectionException;
-
-    /**
-     *
-     * @param adapter
-     * @param userId
-     * @return
-     * @throws PerunUnknownException
-     * @throws PerunConnectionException
-     */
-    List<UserExtSource> getUserExtSources(@NonNull FullAdapter adapter, @NonNull Long userId) throws PerunUnknownException, PerunConnectionException;
-
-    /**
-     *
-     * @param login
-     * @param identityId
-     * @param requestAttributesMap
-     * @param adapter
-     * @param attributeMapper
-     * @param attributesToFindUes
-     * @return
-     * @throws PerunUnknownException
-     * @throws PerunConnectionException
-     */
-    boolean updateUserIdentityAttributes(@NonNull String login, @NonNull String identityId,
-                                                @NonNull Map<String, JsonNode> requestAttributesMap,
-                                                @NonNull FullAdapter adapter, @NonNull Map<String, String> attributeMapper,
-                                                @NonNull List<String> attributesToFindUes)
+    boolean updateUserIdentityAttributes(@NonNull String login,
+                                         @NonNull String identityId,
+                                         @NonNull FullAdapter adapter,
+                                         @NonNull Map<String, JsonNode> requestAttributes,
+                                         @NonNull Map<String, UpdateAttributeMappingEntry> mapper,
+                                         @NonNull Map<String, String> externalToInternalMapping,
+                                         @NonNull List<String> attrsToSearchBy)
             throws PerunUnknownException, PerunConnectionException;
 
 }
