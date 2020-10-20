@@ -2,72 +2,118 @@ package cz.muni.ics.perunproxyapi.persistence.adapters.impl.rpc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import cz.muni.ics.perunproxyapi.persistence.enums.MemberStatus;
-
-import cz.muni.ics.perunproxyapi.persistence.models.*;
+import cz.muni.ics.perunproxyapi.persistence.models.AttributeObjectMapping;
+import cz.muni.ics.perunproxyapi.persistence.models.ExtSource;
+import cz.muni.ics.perunproxyapi.persistence.models.Facility;
+import cz.muni.ics.perunproxyapi.persistence.models.Group;
+import cz.muni.ics.perunproxyapi.persistence.models.Member;
+import cz.muni.ics.perunproxyapi.persistence.models.PerunAttribute;
+import cz.muni.ics.perunproxyapi.persistence.models.Resource;
+import cz.muni.ics.perunproxyapi.persistence.models.User;
+import cz.muni.ics.perunproxyapi.persistence.models.UserExtSource;
+import cz.muni.ics.perunproxyapi.persistence.models.Vo;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-public class RpcMapperTests {
+public class RpcMapperTest {
+
+    public static final String ID = "id";
+    public static final String FIRST_NAME = "firstName";
+    public static final String LAST_NAME = "lastName";
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @Test
-    public void mapUserStandard() {
-        Map<String, Object> userMap = new <String, Object>HashMap();
-        userMap.put("id", 1L);
-        userMap.put("firstName", "name");
-        userMap.put("lastName", "surname");
-        JsonNode node = mapper.convertValue(userMap, JsonNode.class);
-        User user = RpcMapper.mapUser(node);
-        assertEquals(user.getPerunId(), 1L);
-        assertEquals(user.getFirstName(), "name");
-        assertEquals(user.getLastName(), "surname");
+    private ObjectNode sampleUser1Json;
+    private User sampleUser1;
+    private ObjectNode sampleUser2Json;
+    private User sampleUser2;
+    private ArrayNode usersArray;
+
+    @BeforeEach
+    public void setUp() {
+        setUpUsers();
+    }
+
+    private void setUpUsers() {
+        sampleUser1Json = JsonNodeFactory.instance.objectNode();
+        Long id1 = 1L;
+        String firstName1 = "John";
+        String lastName1 = "Doe";
+
+        sampleUser1Json.put(ID, id1);
+        sampleUser1Json.put(FIRST_NAME, firstName1);
+        sampleUser1Json.put(LAST_NAME, lastName1);
+
+        sampleUser1 = new User(id1, firstName1, lastName1, new LinkedHashMap<>());
+
+        sampleUser2Json = JsonNodeFactory.instance.objectNode();
+        Long id2 = 2L;
+        String firstName2 = "Joanne";
+        String lastName2 = "Doe";
+
+        sampleUser2Json.put(ID, id2);
+        sampleUser2Json.put(FIRST_NAME, firstName2);
+        sampleUser2Json.put(LAST_NAME, lastName2);
+
+        sampleUser2 = new User(id2, firstName2, lastName2, new LinkedHashMap<>());
+
+        usersArray = JsonNodeFactory.instance.arrayNode();
+        usersArray.add(sampleUser1Json);
+        usersArray.add(sampleUser2Json);
     }
 
     @Test
-    public void mapUserMissingId() {
-        Map<String, Object> userMap = new <String, Object>HashMap();
-        userMap.put("firstName", "name");
-        userMap.put("lastName", "surname");
-        JsonNode node = mapper.convertValue(userMap, JsonNode.class);
-        assertThrows(NullPointerException.class, () -> RpcMapper.mapUser(node));
+    public void testMapUserStandard() {
+        User actual = RpcMapper.mapUser(sampleUser1Json);
+        assertNotNull(actual);
+        assertEquals(sampleUser1.getPerunId(), actual.getPerunId());
+        assertEquals(sampleUser1.getFirstName(), actual.getFirstName());
+        assertEquals(sampleUser1.getLastName(), actual.getLastName());
+        assertEquals(sampleUser1, actual);
     }
 
     @Test
     public void mapNullUser() {
-        assertEquals(RpcMapper.mapUser(JsonNodeFactory.instance.nullNode()), null);
+        assertThrows(NullPointerException.class, () -> RpcMapper.mapUser(null));
+    }
+
+    @Test
+    public void mapNullNodeUser() {
+        assertNull(RpcMapper.mapUser(JsonNodeFactory.instance.nullNode()));
     }
 
     @Test
     public void mapUsersStandard() {
-        Map<String, Object> userMap = new <String, Object>HashMap();
-        userMap.put("id", 1L);
-        userMap.put("firstName", "name");
-        userMap.put("lastName", "surname");
-        List<JsonNode> users = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            users.add(mapper.convertValue(userMap, JsonNode.class));
-        }
-        JsonNode node = mapper.convertValue(users, JsonNode.class);
-        List<User> mappedUsers = RpcMapper.mapUsers(node);
-        for (int i = 0; i < 5; i++) {
-            assertEquals(mappedUsers.get(i).getPerunId(), 1L);
-            assertEquals(mappedUsers.get(i).getFirstName(), "name");
-            assertEquals(mappedUsers.get(i).getLastName(), "surname");
-        }
+        List<User> actual = RpcMapper.mapUsers(usersArray);
+        assertNotNull(actual);
+        assertFalse(actual.isEmpty());
+        assertTrue(actual.containsAll(Arrays.asList(sampleUser1, sampleUser2)));
     }
 
     @Test
@@ -76,8 +122,15 @@ public class RpcMapperTests {
     }
 
     @Test
+    public void mapNullNodeUsers() {
+        List<User> actual = RpcMapper.mapUsers(JsonNodeFactory.instance.nullNode());
+        assertNotNull(actual);
+        assertTrue(actual.isEmpty());
+    }
+
+    @Test
     public void mapGroupStandard() {
-        Map<String, Object> groupMap = new <String, Object>HashMap();
+        Map<String, Object> groupMap = new HashMap<>();
         groupMap.put("id", 1L);
         groupMap.put("parentGroupId", 2L);
         groupMap.put("name", "name");
@@ -94,7 +147,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapGroupsStandard() {
-        Map<String, Object> groupMap = new <String, Object>HashMap();
+        Map<String, Object> groupMap = new HashMap<>();
         groupMap.put("id", 1L);
         groupMap.put("parentGroupId", 2L);
         groupMap.put("name", "name");
@@ -127,7 +180,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapFacilityStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("name", "name");
         map.put("description", "description");
@@ -140,7 +193,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapFacilitiesStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("name", "name");
         map.put("description", "description");
@@ -169,7 +222,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapFacilityMissingId() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("name", "name");
         map.put("description", "description");
         JsonNode node = mapper.convertValue(map, JsonNode.class);
@@ -178,7 +231,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapMemberStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("userId", 2L);
         map.put("voId", 3L);
@@ -194,7 +247,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapMemberNullId() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("userId", 2L);
         map.put("voId", 3L);
         map.put("status", "VALID");
@@ -205,7 +258,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapMembersStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("userId", 2L);
         map.put("voId", 3L);
@@ -237,7 +290,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapResourceStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("voId", 2L);
         map.put("facilityId", 3L);
@@ -254,7 +307,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapResourceNull() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("voId", 2L);
         map.put("facilityId", 3L);
         map.put("name", "name");
@@ -265,7 +318,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapResourcesStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("voId", 2L);
         map.put("facilityId", 3L);
@@ -298,7 +351,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapExtSourceStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("name", "name");
         map.put("type", "type");
@@ -312,7 +365,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapExtSourcesStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("name", "name");
         map.put("type", "type");
@@ -332,7 +385,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapExtSourceNullId() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("name", "name");
         map.put("type", "type");
 
@@ -352,7 +405,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapVoStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("name", "name");
         map.put("shortName", "shortName");
@@ -366,7 +419,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapVosStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("name", "name");
         map.put("shortName", "shortName");
@@ -386,7 +439,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapVoNullId() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("name", "name");
         map.put("shortName", "shortName");
 
@@ -411,7 +464,7 @@ public class RpcMapperTests {
         Date date = dateFormat.parse("10/10/1999 10:10:10");
         long time = date.getTime();
         Timestamp timestamp = new Timestamp(time);
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("login", "login");
         map.put("extSource", extSource);
@@ -435,7 +488,7 @@ public class RpcMapperTests {
         Date date = dateFormat.parse("10/10/1999 10:10:10");
         long time = date.getTime();
         Timestamp timestamp = new Timestamp(time);
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("login", "login");
         map.put("extSource", extSource);
@@ -475,7 +528,7 @@ public class RpcMapperTests {
         Date date = dateFormat.parse("10/10/1999 10:10:10");
         long time = date.getTime();
         Timestamp timestamp = new Timestamp(time);
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("login", "login");
         map.put("extSource", extSource);
         map.put("loa", 12);
@@ -488,7 +541,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapAttributeStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("friendlyName", "friendlyName");
         map.put("namespace", "namespace");
@@ -518,7 +571,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapAttributeNullId() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("friendlyName", "friendlyName");
         map.put("namespace", "namespace");
         map.put("description", "description");
@@ -537,7 +590,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapAttributesStandard() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("friendlyName", "friendlyName");
         map.put("namespace", "namespace");
@@ -596,7 +649,7 @@ public class RpcMapperTests {
 
     @Test
     public void mapNullMappings() {
-        Map<String, Object> map = new <String, Object>HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("id", 1L);
         map.put("friendlyName", "friendlyName");
         map.put("namespace", "namespace");
