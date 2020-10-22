@@ -2,6 +2,7 @@ package cz.muni.ics.perunproxyapi.persistence.adapters.impl.rpc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import cz.muni.ics.perunproxyapi.persistence.enums.MemberStatus;
+import cz.muni.ics.perunproxyapi.persistence.exceptions.MissingFieldException;
 import cz.muni.ics.perunproxyapi.persistence.models.AttributeObjectMapping;
 import cz.muni.ics.perunproxyapi.persistence.models.ExtSource;
 import cz.muni.ics.perunproxyapi.persistence.models.Facility;
@@ -31,10 +32,38 @@ import java.util.stream.IntStream;
  */
 public class RpcMapper {
 
+    public static final String ID = "id";
+    public static final String FIRST_NAME = "firstName";
+    public static final String LAST_NAME = "lastName";
+    public static final String PARENT_GROUP_ID = "parentGroupId";
+    public static final String NAME = "name";
+    public static final String DESCRIPTION = "description";
+    public static final String VO_ID = "voId";
+    public static final String USER_ID = "userId";
+    public static final String STATUS = "status";
+    public static final String FACILITY_ID = "facilityId";
+    public static final String TYPE = "type";
+    public static final String SHORT_NAME = "shortName";
+    public static final String LOGIN = "login";
+    public static final String EXT_SOURCE = "extSource";
+    public static final String LOA = "loa";
+    public static final String LAST_ACCESS = "lastAccess";
+    public static final String PERSISTENT = "persistent";
+    public static final String FRIENDLY_NAME = "friendlyName";
+    public static final String NAMESPACE = "namespace";
+    public static final String DISPLAY_NAME = "displayName";
+    public static final String WRITABLE = "writable";
+    public static final String UNIQUE = "unique";
+    public static final String ENTITY = "entity";
+    public static final String BASE_FRIENDLY_NAME = "baseFriendlyName";
+    public static final String FRIENDLY_NAME_PARAMETER = "friendlyNameParameter";
+    public static final String VALUE = "value";
+
     private String entity;
 
     /**
      * Maps JsonNode to User model.
+     *
      * @param json User in JSON format from Perun to be mapped.
      * @return Mapped User object.
      */
@@ -43,15 +72,16 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        String firstName = json.get("firstName").asText();
-        String lastName = json.get("lastName").asText();
+        Long id = getRequiredFieldAsLong(json, ID);
+        String firstName = getRequiredFieldAsString(json, FIRST_NAME);
+        String lastName = getRequiredFieldAsString(json, LAST_NAME);
 
         return new User(id, firstName, lastName, new HashMap<>());
     }
 
     /**
      * Maps JsonNode to List of USERS.
+     *
      * @param jsonArray JSON array of users in JSON format from Perun to be mapped.
      * @return List of users.
      */
@@ -68,6 +98,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to Group model.
+     *
      * @param json Group in JSON format from Perun to be mapped.
      * @return Mapped Group object.
      */
@@ -76,17 +107,18 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        Long parentGroupId = json.get("parentGroupId").asLong();
-        String name = json.get("name").asText();
-        String description = json.get("description").asText();
-        Long voId = json.get("voId").asLong();
+        Long id = getRequiredFieldAsLong(json, ID);
+        Long parentGroupId = getRequiredFieldAsLong(json, PARENT_GROUP_ID);
+        String name = getRequiredFieldAsString(json, NAME);
+        String description = getRequiredFieldAsString(json, DESCRIPTION);
+        Long voId = getRequiredFieldAsLong(json, VO_ID);
 
         return new Group(id, parentGroupId, name, description, null, voId);
     }
 
     /**
      * Maps JsonNode to List of Groups.
+     *
      * @param jsonArray JSON array of groups in JSON format from Perun to be mapped.
      * @return List of groups.
      */
@@ -107,6 +139,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to Facility model.
+     *
      * @param json Facility in JSON format from Perun to be mapped.
      * @return Mapped Facility object.
      */
@@ -115,15 +148,16 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        String name = json.get("name").asText();
-        String description = json.get("description").asText();
+        Long id = getRequiredFieldAsLong(json, ID);
+        String name = getRequiredFieldAsString(json, NAME);
+        String description = getRequiredFieldAsString(json, DESCRIPTION);
 
         return new Facility(id, name, description);
     }
 
     /**
      * Maps JsonNode to List of Facilities.
+     *
      * @param jsonArray JSON array of facilities in JSON format from Perun to be mapped.
      * @return List of facilities.
      */
@@ -144,6 +178,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to Member model.
+     *
      * @param json Member in JSON format from Perun to be mapped.
      * @return Mapped Member object.
      */
@@ -152,16 +187,17 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        Long userId = json.get("userId").asLong();
-        Long voId = json.get("voId").asLong();
-        MemberStatus status = MemberStatus.fromString(json.get("status").asText());
+        Long id = getRequiredFieldAsLong(json, ID);
+        Long userId = getRequiredFieldAsLong(json, USER_ID);
+        Long voId = getRequiredFieldAsLong(json, VO_ID);
+        MemberStatus status = MemberStatus.fromString(getRequiredFieldAsString(json, STATUS));
 
         return new Member(id, userId, voId, status);
     }
 
     /**
      * Maps JsonNode to List of Members.
+     *
      * @param jsonArray JSON array of members in JSON format from Perun to be mapped.
      * @return List of members.
      */
@@ -182,6 +218,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to Resource model.
+     *
      * @param json Resource in JSON format from Perun to be mapped.
      * @return Mapped Resource object.
      */
@@ -190,11 +227,11 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        Long voId = json.get("voId").asLong();
-        Long facilityId = json.get("facilityId").asLong();
-        String name = json.get("name").asText();
-        String description = json.get("description").asText();
+        Long id = getRequiredFieldAsLong(json, ID);
+        Long voId = getRequiredFieldAsLong(json, VO_ID);
+        Long facilityId = getRequiredFieldAsLong(json, FACILITY_ID);
+        String name = getRequiredFieldAsString(json, NAME);
+        String description = getRequiredFieldAsString(json, DESCRIPTION);
 
         Vo vo = null;
 
@@ -208,6 +245,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to List of Resources.
+     *
      * @param jsonArray JSON array of resources in JSON format from Perun to be mapped.
      * @return List of resources.
      */
@@ -228,6 +266,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to ExtSource model.
+     *
      * @param json ExtSource in JSON format from Perun to be mapped.
      * @return Mapped ExtSource object.
      */
@@ -236,15 +275,16 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        String name = json.get("name").asText();
-        String type = json.get("type").asText();
+        Long id = getRequiredFieldAsLong(json, ID);
+        String name = getRequiredFieldAsString(json, NAME);
+        String type = getRequiredFieldAsString(json, TYPE);
 
         return new ExtSource(id, name, type);
     }
 
     /**
      * Maps JsonNode to List of ExtSources.
+     *
      * @param jsonArray JSON array of extSources in JSON format from Perun to be mapped.
      * @return List of extSources.
      */
@@ -266,6 +306,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to VO model.
+     *
      * @param json VO in JSON format from Perun to be mapped.
      * @return Mapped VO object.
      */
@@ -274,15 +315,16 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        String name = json.get("name").asText();
-        String shortName = json.get("shortName").asText();
+        Long id = getRequiredFieldAsLong(json, ID);
+        String name = getRequiredFieldAsString(json, NAME);
+        String shortName = getRequiredFieldAsString(json, SHORT_NAME);
 
         return new Vo(id, name, shortName);
     }
 
     /**
      * Maps JsonNode to List of VOs.
+     *
      * @param jsonArray JSON array of VOs in JSON format from Perun to be mapped.
      * @return List of VOs.
      */
@@ -304,6 +346,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to UserExtSource model.
+     *
      * @param json UserExtSource in JSON format from Perun to be mapped.
      * @return Mapped UserExtSource object.
      */
@@ -312,18 +355,19 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        String login = json.get("login").asText();
-        ExtSource extSource = RpcMapper.mapExtSource(json.path("extSource"));
-        int loa = json.get("loa").asInt();
-        boolean persistent = json.get("persistent").asBoolean();
-        Timestamp lastAccess = Timestamp.valueOf(json.get("lastAccess").asText());
+        Long id = getRequiredFieldAsLong(json, ID);
+        String login = getRequiredFieldAsString(json, LOGIN);
+        ExtSource extSource = RpcMapper.mapExtSource(getRequiredFieldPath(json, EXT_SOURCE));
+        int loa = getRequiredFieldAsInt(json, LOA);
+        boolean persistent = getRequiredFieldAsBoolean(json, PERSISTENT);
+        Timestamp lastAccess = Timestamp.valueOf(getRequiredFieldAsString(json, LAST_ACCESS));
 
         return new UserExtSource(id, extSource, login, loa, persistent, lastAccess);
     }
 
     /**
      * Maps JsonNode to List of UserExtSources.
+     *
      * @param jsonArray JSON array of userExtSources in JSON format from Perun to be mapped.
      * @return List of userExtSources.
      */
@@ -345,6 +389,7 @@ public class RpcMapper {
 
     /**
      * Maps JsonNode to PerunAttribute model.
+     *
      * @param json PerunAttribute in JSON format from Perun to be mapped.
      * @return Mapped PerunAttribute object.
      */
@@ -353,18 +398,18 @@ public class RpcMapper {
             return null;
         }
 
-        Long id = json.get("id").asLong();
-        String friendlyName = json.get("friendlyName").asText();
-        String namespace = json.get("namespace").asText();
-        String description = json.get("description").asText();
-        String type = json.get("type").asText();
-        String displayName = json.get("displayName").asText();
-        boolean writable = json.get("writable").asBoolean();
-        boolean unique = json.get("unique").asBoolean();
-        String entity = json.get("entity").asText();
-        String baseFriendlyName = json.get("baseFriendlyName").asText();
-        String friendlyNameParameter = json.get("friendlyNameParameter").asText();
-        JsonNode value = json.get("value");
+        Long id = getRequiredFieldAsLong(json, ID);
+        String friendlyName = getRequiredFieldAsString(json, FRIENDLY_NAME);
+        String namespace = getRequiredFieldAsString(json, NAMESPACE);
+        String description = getRequiredFieldAsString(json, DESCRIPTION);
+        String type = getRequiredFieldAsString(json, TYPE);
+        String displayName = getRequiredFieldAsString(json, DISPLAY_NAME);
+        boolean writable = getRequiredFieldAsBoolean(json, WRITABLE);
+        boolean unique = getRequiredFieldAsBoolean(json, UNIQUE);
+        String entity = getRequiredFieldAsString(json, ENTITY);
+        String baseFriendlyName = getRequiredFieldAsString(json, BASE_FRIENDLY_NAME);
+        String friendlyNameParameter = getRequiredFieldAsString(json, FRIENDLY_NAME_PARAMETER);
+        JsonNode value = getRequiredFieldAsJsonNode(json, VALUE);
 
         return new PerunAttribute(id, friendlyName, namespace, description, type, displayName,
                 writable, unique, entity, baseFriendlyName, friendlyNameParameter, value);
@@ -374,7 +419,8 @@ public class RpcMapper {
      * Maps JsonNode to Map<String, PerunAttribute>.
      * Keys are the internal identifiers of the attributes.
      * Values are attributes corresponding to the names.
-     * @param jsonArray JSON array of perunAttributes in JSON format from Perun to be mapped.
+     *
+     * @param jsonArray    JSON array of perunAttributes in JSON format from Perun to be mapped.
      * @param attrMappings Set of the AttributeObjectMapping objects that will be used for mapping of the attributes.
      * @return Map<String, PerunAttribute>. If attribute for identifier has not been mapped, key contains NULL as value.
      */
@@ -396,7 +442,7 @@ public class RpcMapper {
             }
         }
 
-        for (AttributeObjectMapping mapping: attrMappings) {
+        for (AttributeObjectMapping mapping : attrMappings) {
             String attrKey = mapping.getRpcName();
             if (mappedAttrsMap.containsKey(attrKey)) {
                 PerunAttribute attribute = mappedAttrsMap.get(attrKey);
@@ -407,6 +453,49 @@ public class RpcMapper {
         }
 
         return map;
+    }
+
+    private static Long getRequiredFieldAsLong(JsonNode json, String name) {
+        if (!json.hasNonNull(name)) {
+            throw new MissingFieldException();
+        }
+        return json.get(name).asLong();
+    }
+
+    private static int getRequiredFieldAsInt(JsonNode json, String name) {
+        if (!json.hasNonNull(name)) {
+            throw new MissingFieldException();
+        }
+        return json.get(name).asInt();
+    }
+
+    private static boolean getRequiredFieldAsBoolean(JsonNode json, String name) {
+        if (!json.hasNonNull(name)) {
+            throw new MissingFieldException();
+        }
+        return json.get(name).asBoolean();
+    }
+
+    private static String getRequiredFieldAsString(JsonNode json, String name) {
+        if (!json.hasNonNull(name)) {
+            throw new MissingFieldException();
+        }
+        return json.get(name).asText();
+    }
+
+
+    private static JsonNode getRequiredFieldAsJsonNode(JsonNode json, String name) {
+        if (!json.hasNonNull(name)) {
+            throw new MissingFieldException();
+        }
+        return json.get(name);
+    }
+
+    private static JsonNode getRequiredFieldPath(JsonNode json, String name) {
+        if (!json.hasNonNull(name)) {
+            throw new MissingFieldException();
+        }
+        return json.path(name);
     }
 
 }

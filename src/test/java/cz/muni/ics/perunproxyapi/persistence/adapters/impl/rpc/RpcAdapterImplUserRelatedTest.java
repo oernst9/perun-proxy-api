@@ -246,7 +246,7 @@ public class RpcAdapterImplUserRelatedTest {
 
     @Test
     public void testGetUserWithAttributesByLoginMoreUsers() throws PerunUnknownException, PerunConnectionException {
-        User user = mock(User.class);
+        User user = new User(5L, "name", "lastName", new HashMap<>());
         JsonNode userJson = TestUtils.getJsonForUser(user);
         JsonNode usersArray = JsonNodeFactory.instance.arrayNode()
                 .add(sampleUserJson)
